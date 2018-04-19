@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="robot_ip" default="219.223.238.121"/>
+  <arg name="limited" default="true"/>
+
+  <include file="$(find ur_modern_driver)/launch/ur10_bringup.launch">
+    <arg name="limited" value="$(arg limited)"/>
+    <arg name="robot_ip" value="$(arg robot_ip)"/>
+  </include>
+
+  <include file="$(find robot_moveit_config)/launch/ur10_moveit_planning_execution.launch"/>
+
+
+
+
+</launch>

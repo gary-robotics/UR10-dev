@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="sim" default="false"/>
+    <!-- real robot -->
+    <include file="$(find ur10_gripper_bringup)/launch/ur10_robot.launch"/>
+
+    <!-- gripper -->
+    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find robotiq_arg2f_model_visualization)/urdf/robotiq_arg2f_140_model.xacro'" />
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" >
+     <rosparam param="source_list">[/gripper/joint_states,/joint_states]</rosparam>
+    </node>
+    
+     <!-- Remap follow_joint_trajectory -->
+    <remap if="$(arg sim)" from="/follow_joint_trajectory" to="/arm_controller/follow_joint_trajectory"/>
+
+    <!--moveit bringup-->
+    <include file="$(find ur10_gripper_moveit_config)/launch/ur10_gripper_moveit_plan_execution.launch">
+     <arg name="sim" value="$(arg sim)"/>
+    </include>
+
+
+
+</launch>

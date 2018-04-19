@@ -1,0 +1,8 @@
+<launch>
+ <!--
+ <rosparam command="load" file="$(find ur10_gripper_moveit_config)/config/sensor_kinect_pointcloud.yaml" />
+ <node name="camera_to_base" pkg="ur10_setup_tf" type="tf_broadcaster" /> 
+  -->
+</launch>
+
+
