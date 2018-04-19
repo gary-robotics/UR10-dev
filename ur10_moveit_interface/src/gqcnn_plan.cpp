@@ -5,10 +5,7 @@
 #include <tf/transform_listener.h>
 #include <tf/tf.h>
 
-
 #include <moveit/move_group_interface/move_group_interface.h>
-
-
 
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/Dense>
@@ -22,6 +19,7 @@ using namespace std;
 
 
 geometry_msgs::Pose target_pose;
+geometry_msgs::Pose pre_grasp_pose;
 int start = 0;
 
 /* hand_eye_calibration result */
@@ -44,7 +42,9 @@ void poseCallback(const geometry_msgs::Pose msg)
   tf::Pose p_;
   tf::poseEigenToTF(tp,p_);
   tf::poseTFToMsg(p_,target_pose);
-  target_pose.position.x -=0.2;
+  pre_grasp_pose = target_pose;
+  pre_grasp_pose.position.z += 0.40;
+  target_pose.position.z += 0.16;
   ROS_INFO_STREAM(target_pose);
   start = 1;
 }
@@ -56,7 +56,6 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   tf::TransformListener listener;
   ros::Duration(1).sleep();
-
   ros::Subscriber sub = nh.subscribe("gqcnn_grasp_pose",1,poseCallback);
   ros::AsyncSpinner spinner(2);
   spinner.start();
@@ -76,18 +75,29 @@ int main(int argc, char **argv)
   arm.setPoseReferenceFrame("base");
   arm.allowReplanning(true);
   arm.setWorkspace(-2,2,-2,2,-2,2);
+  gripper.setNamedTarget("open");
+  gripper.move();
+
+  /*
+  arm.setNamedTarget("hold");
+  arm.move();
+  */
   
   /* gripper interface */
+  /*
   ros::Publisher pub_= nh.advertise<grasp_interface::RCGripperCommand>("grip_command",1);
   grasp_interface::RCGripperCommand gp;
+  */
 
   /* activate the gripper 255=close 0=open*/
+  /*
   gp.position = 255;
   pub_.publish(gp);
   ros::Duration(2).sleep();
   gp.position = 0;
   pub_.publish(gp);
   ros::Duration(2).sleep();
+  */
 
   ROS_INFO_STREAM("in main");
 
@@ -120,31 +130,52 @@ int main(int argc, char **argv)
       kinematic_state.copyJointGroupPositions(joint_model_arm, joint_values);
     }
     
-      arm.setPoseTarget(end_effector_state);
-      moveit::planning_interface::MoveGroupInterface::Plan plan;
-      bool success = arm.plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
-      if(success)
-      {
+    arm.setPoseTarget(end_effector_state);
+    moveit::planning_interface::MoveGroupInterface::Plan plan;
+    bool success = arm.plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+    if(success)
+    {
       ROS_INFO_STREAM("plan succeed");
+      /* first to pre-grasp pose*/
+      arm.setPoseTarget(pre_grasp_pose);
+      arm.move();
+      ros::Duration(2).sleep();
+      /* grasp pose */
       arm.execute(plan);
       ros::Duration(5).sleep();
       arm.clearPoseTarget();
+      /* gripper grasp */
+      gripper.setNamedTarget("close");
+      gripper.move();
+      ros::Duration(5).sleep();
+      /* move to pre-difined place pose*/
+      arm.setNamedTarget("hold");
+      arm.move();
+      ros::Duration(5).sleep();
+      /* gripper open */
+      gripper.setNamedTarget("open");
+      ros::Duration(5).sleep();  
+
+      /*
       gp.position = 255;
       gp.force = 50;
       pub_.publish(gp);
-      ros::Duration(2).sleep();
+ 
       arm.setNamedTarget("hold");
       arm.move();
       gp.position = 0;
       pub_.publish(gp);
       ros::Duration(2).sleep();
+      */
+
       start = 0;
-      }
+    }
     
     
    }
    
  }
+
  arm.stop();
  
 
