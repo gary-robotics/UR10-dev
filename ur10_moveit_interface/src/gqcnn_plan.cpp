@@ -59,7 +59,7 @@ int main(int argc, char **argv)
   ros::Subscriber sub = nh.subscribe("gqcnn_grasp_pose",1,poseCallback);
   ros::AsyncSpinner spinner(2);
   spinner.start();
-  ros::Duration(2).sleep();
+  ros::Duration(1).sleep();
   /* set transform */
   camera_to_base.pretranslate(camera_translation);
 
@@ -69,14 +69,17 @@ int main(int argc, char **argv)
   ROS_INFO("Reference frame: %s", arm.getPlanningFrame().c_str());  
   ROS_INFO("Reference frame: %s", arm.getEndEffectorLink().c_str());
   arm.setStartStateToCurrentState();
-  arm.setPlannerId("RRTConnectkConfigDefault");
-  arm.setPlanningTime(10);
+  arm.setPlannerId("LBKPIECEkConfigDefault");
+  arm.setPlanningTime(20);
   arm.setMaxVelocityScalingFactor(0.02);
   arm.setPoseReferenceFrame("base");
   arm.allowReplanning(true);
   arm.setWorkspace(-2,2,-2,2,-2,2);
+  ros::Duration(1).sleep();
+  /*
   gripper.setNamedTarget("open");
   gripper.move();
+  */
 
   /*
   arm.setNamedTarget("hold");
@@ -129,19 +132,24 @@ int main(int argc, char **argv)
       std::vector<double> joint_values;
       kinematic_state.copyJointGroupPositions(joint_model_arm, joint_values);
     }
-    
+    /*
     arm.setPoseTarget(end_effector_state);
     moveit::planning_interface::MoveGroupInterface::Plan plan;
     bool success = arm.plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
-    if(success)
-    {
+    if(success)*/
+    
       ROS_INFO_STREAM("plan succeed");
+      gripper.setNamedTarget("open");
+      gripper.move();
+      ros::Duration(2).sleep();
       /* first to pre-grasp pose*/
       arm.setPoseTarget(pre_grasp_pose);
       arm.move();
       ros::Duration(2).sleep();
       /* grasp pose */
-      arm.execute(plan);
+      arm.setPoseTarget(target_pose);
+      arm.move();
+      /*arm.execute(plan);*/
       ros::Duration(5).sleep();
       arm.clearPoseTarget();
       /* gripper grasp */
@@ -169,7 +177,7 @@ int main(int argc, char **argv)
       */
 
       start = 0;
-    }
+    
     
     
    }

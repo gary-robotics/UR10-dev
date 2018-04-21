@@ -6,14 +6,14 @@ int main(int argc ,char** argv)
 	ros::NodeHandle n;
 	
 	ros::Rate r(50);
-	tf::TransformBroadcaster broadcaster1;
-	tf::TransformBroadcaster broadcaster2;
+	tf::TransformBroadcaster broadcaster;
 	while(n.ok()){
-	broadcaster1.sendTransform(
+	broadcaster.sendTransform(
 	  tf::StampedTransform(  // x y z w 
 		tf::Transform(tf::Quaternion(0.7108,0.7030,0.0109,0.0226),
 		tf::Vector3(1.380737478650816, 0.220867800269379, 0.883465239696023)),
                 ros::Time::now(),"base","camera_link"));
+				r.sleep();
 	}
 
 

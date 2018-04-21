@@ -1,14 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+__author__ = 'Alex Wang'
+
 import rospy
-from sensor_msgs.msg import Image, CameraInfo
+import copy
+import moveit_commander
+from moveit_msgs.msg import PositionIKRequest
+from moveit_msgs.srv import GetPositionIK
+from moveit_msgs.srv import GetPositionIKRequest
+from moveit_msgs.srv import GetPositionIKResponse
+import geometry_msgs.msg
+from sensor_msgs.msg import Image, CameraInfo, JointState
 from cv_bridge import CvBridge, CvBridgeError
 import message_filters
+import tf
 
+import sys
 import numpy as np 
 import cv2
 import yaml
+import threading
 
 import perception
 from autolab_core import RigidTransform, YamlConfig
@@ -19,14 +31,41 @@ from gqcnn.srv import GQCNNGraspPlanner
 from gqcnn import Visualizer as vis
 
 
-class GQCNN_Pose(object):
+
+
+class MovePlan(object):
     def __init__(self,config):
+        rospy.init_node("gqcnn_node",anonymous=True)
+        
+        # Moveit! setup
+        moveit_commander.roscpp_initialize(sys.argv)
+        self.robot = moveit_commander.RobotCommander()
+        self.scene = moveit_commander.PlanningSceneInterface()
+        self.arm = moveit_commander.MoveGroupCommander('arm')
+        self.gripper = moveit_commander.MoveGroupCommander('gripper')
+        self.arm.set_start_state_to_current_state()
+        self.arm.set_pose_reference_frame('base')
+        self.arm.set_planner_id('SBLkConfigDefault')
+        self.arm.set_planning_time(10)
+        self.arm.set_max_velocity_scaling_factor(0.02)
+        self.arm.set_max_acceleration_scaling_factor(0.02)
+        self.arm.set_goal_orientation_tolerance(0.1)
+        self.arm.set_workspace([-2,-2,-2,2,2,2])
+        self.gripper.set_goal_joint_tolerance(0.2)
+
+
+        print "============ Reference frame: %s" % self.arm.get_planning_frame()
+        print "============ End effector: %s" % self.arm.get_end_effector_link()  
+         
+
+        # messgae filter for image topic
         self.image_sub = message_filters.Subscriber("/camera/rgb/image_rect_color", Image)
         self.depth_sub = message_filters.Subscriber("/camera/depth_registered/sw_registered/image_rect", Image)
         self.camera_info_topic = "/camera/rgb/camera_info"
         self.camera_info = rospy.wait_for_message(self.camera_info_topic,CameraInfo,timeout=3)
         self.ts = message_filters.ApproximateTimeSynchronizer([self.image_sub, self.depth_sub], 1, 1)
         self.ts.registerCallback(self.cb)
+        
         # bounding box for objects 
         self.bounding_box = BoundingBox()
         self.bounding_box.maxX = 640
@@ -35,10 +74,26 @@ class GQCNN_Pose(object):
         self.bounding_box.minY = 0
         self.bridge = CvBridge()
 
+        # transform listener
+        self.listener = tf.TransformListener()
+
+        # compute_ik service
+        self.ik_srv = rospy.ServiceProxy('/compute_ik',GetPositionIK)
+        rospy.loginfo("Waiting for /compute_ik service...")
+        self.ik_srv.wait_for_service()
+        rospy.loginfo("Connected!")
+        self.service_request = PositionIKRequest()
+        self.service_request.group_name = 'arm'
+        self.service_request.timeout = rospy.Duration(2)
+        self.service_request.avoid_collisions = True
+
+        # signal
+        self.start = 0
+
     def cb(self,color_msg,depth_msg):
         # depth image should be processed in advance 
         self.color_msg = color_msg
-        depth_msg = self.bridge.imgmsg_to_cv2(depth_msg,"passthrough")
+        depth_msg = self.bridge.imgmsg_to_cv2(depth_msg,'passthrough')
         depth_msg = perception.DepthImage(depth_msg,config_file)
         depth_msg = depth_msg.inpaint()
         self.depth_msg = self.bridge.cv2_to_imgmsg(depth_msg.data)
@@ -49,21 +104,112 @@ class GQCNN_Pose(object):
         cv2.normalize(depth_msg, depth_msg, 0, 1, cv2.NORM_MINMAX)
         depth_msg = np.expand_dims(depth_msg,2)    
         '''
-
+        
+    def call_gqcnn_srv(self):
         try:
+            rospy.sleep(1)
+            # call gqcnn service
             plan_gqcnn_grasp = rospy.ServiceProxy('plan_gqcnn_grasp',GQCNNGraspPlanner)
             response = plan_gqcnn_grasp(self.color_msg,self.depth_msg,self.camera_info,self.bounding_box)
-            print(response)    
-            while True:
-                print(response)     
+            grasp_pose_camera_frame = response.grasp.pose
+            grasp_pose_camera_frame_stamped = geometry_msgs.msg.PoseStamped()
+            grasp_pose_camera_frame_stamped.pose = grasp_pose_camera_frame
+            grasp_pose_camera_frame_stamped.header.frame_id = 'camera_link'
+            grasp_pose_camera_frame_stamped.header.stamp = rospy.Time(0)
+            self.grasp_success_prob = response.grasp.grasp_success_prob    
+            self.grasp_pose_base_frame =  self.listener.transformPose('base',grasp_pose_camera_frame_stamped)
+            print (self.grasp_pose_base_frame.pose)
+            self.pre_grasp_pose_base_frame = self.grasp_pose_base_frame
+            self.pre_grasp_pose_base_frame.pose.position.z += 0.15
+            self.pre_grasp_pose_base_frame.pose.position.x -= 0.01
+            self.grasp_pose_base_frame.pose.position.z += 0.02
+            self.grasp_pose_base_frame.pose.position.x -= 0.01
+            self.start_ik = 1
+            
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            print ('look up transform failed')
 
+    '''
+    this function still needs development
+    '''
+    def compute_ik_pose(self, grasp_pose):
+        self.service_request.pose_stamped = grasp_pose
+        try:
+            self.resp = self.ik_srv.call(self.service_request)
+            if(self.resp.error_code == 1):
+                print ('compute IK succeed')
+                self.start_ik = 0
+                return 1
+            else:
+                print ('compute IK fail')
+                print (self.resp)
+                self.start_ik = 0
+                return 0
         except rospy.ServiceException, e:
-            print("Service call failed:%s"%e)
-        
+            print ("Service call failed: %s"%e)
+            return 0
+    
+
 
 if __name__=='__main__':
-    rospy.init_node("gqcnn_node")
     config_file=rospy.get_param("cfg_file","/home/ros/ur10_ws/src/gqcnn/cfg/ros_nodes/grasp_planner_node.yaml")
-    gqcnn_pose = GQCNN_Pose(config_file)
-    rospy.spin()
+    move_plan = MovePlan(config_file)
+    rospy.sleep(2)
+
+    # loop for plan, move and grasp
+    while not rospy.is_shutdown():
+        waypoints = []
+        move_plan.start = 1
+        if move_plan.start == 1:
+            move_plan.start =0
+            print ('in main')
+
+            move_plan.call_gqcnn_srv()
+
+            # make sure the gripper could open 
+            move_plan.gripper.set_named_target('open')
+            move_plan.gripper.go(wait = True)
+            move_plan.gripper.set_named_target('open')
+            move_plan.gripper.go(wait = True)
+            move_plan.gripper.set_named_target('open')
+            move_plan.gripper.go(wait = True)
+            rospy.sleep(2)
+            
+
+            # if move_plan.compute_ik_pose(move_plan.grasp_pose_base_frame):
+            move_plan.arm.set_pose_target(move_plan.pre_grasp_pose_base_frame)  
+            move_plan.arm.go()
+            move_plan.arm.clear_pose_targets()
+            rospy.sleep(1)
+            print ('arrive at pre-grasp pose now !')
+            '''      
+            pre_grasp_plan = move_plan.arm.plan()
+            move_plan.arm.execute(pre_grasp_plan)
+            '''
+            move_plan.arm.set_pose_target(move_plan.grasp_pose_base_frame)        
+            move_plan.arm.go()
+            print ('arrve at grasp pose now !')
+            
+            '''
+            # Cartesian Paths
+            wpose = geometry_msgs.msg.Pose()
+            wpose.orientation.w = 1.0
+            wpose.position.z -= 0.24
+            waypoints.append(copy.deepcopy(wpose))
+            grasp_plan, fraction = move_plan.arm.compute_cartesian_path(waypoints, 0.01, 0.0,avoid_collisions = True)
+            move_plan.arm.execute(grasp_plan)
+            rospy.sleep(2)
+            '''
+        
+            move_plan.gripper.set_named_target('close')
+            move_plan.gripper.go(wait = True)
+            move_plan.gripper.set_named_target('close')
+            move_plan.gripper.go(wait = True)
+            move_plan.gripper.set_named_target('close')
+            move_plan.gripper.go(wait = True)
+            rospy.sleep(2)
+
+
+    rospy.spin()    
+
     

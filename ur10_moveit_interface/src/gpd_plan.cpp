@@ -47,10 +47,10 @@ private:
     moveit::planning_interface::MoveGroupInterface::Plan grasp_plan;
     robot_model_loader::RobotModelLoader robot_model_loader;
     robot_model::RobotModelPtr kinematic_model ;
+    const robot_state::JointModelGroup * joint_model_group;
     moveit_msgs::Grasp grasp_candidate_;
     string frame_id_;
     std::vector<double> joint_values;
-    const robot_state::JointModelGroup * joint_model_group;
     bool start;
     double grasp_offset_;
     std::mutex m_;
@@ -64,7 +64,7 @@ public:
           ROS_INFO_STREAM("init");
           sub_ = n.subscribe("/detect_grasps/clustered_grasps",1000,&MoveitPlan::clustered_grasps_callback,this);
           pub_ = n.advertise<grasp_interface::RCGripperCommand>("grip_command",1);
-          grasp_interface::RCGripperCommand gp;
+
        
           arm.setMaxVelocityScalingFactor(0.02);
           arm.setPoseReferenceFrame("base");
@@ -75,21 +75,25 @@ public:
           arm.setWorkspace(-2,2,-2,2,-2,2);
           arm.setPlanningTime(20);
 
-
+          grasp_interface::RCGripperCommand gp;
+          
           // Setting variables in grasp_candidate_ that are the same for every grasp
           grasp_offset_ = 0;
           grasp_candidate_.id = "grasp";
+          
 
-          grasp_candidate_.pre_grasp_approach.min_distance = 0.08;
-          grasp_candidate_.pre_grasp_approach.desired_distance = 0.1;
-          //grasp_candidate_.pre_grasp_approach.direction.header.frame_id = "tool0";
+          grasp_candidate_.pre_grasp_approach.min_distance = 0.25;
+          grasp_candidate_.pre_grasp_approach.desired_distance = 0.30;
+          
 
-/*
+          
           grasp_candidate_.post_grasp_retreat.min_distance = 0.13;
           grasp_candidate_.post_grasp_retreat.desired_distance = 0.15;
           grasp_candidate_.post_grasp_retreat.direction.header.frame_id = arm.getPlanningFrame();
           grasp_candidate_.post_grasp_retreat.direction.vector.z = 1.0; 
-*/
+          
+          
+
 
 
           jointValuesToJointTrajectory(gripper.getNamedTargetValues("open"), ros::Duration(1.0), grasp_candidate_.pre_grasp_posture);
@@ -105,9 +109,18 @@ public:
     {
       if(start)
       {
-        arm.setPoseTarget(pose);
-       // arm.pick("",grasp_candidate_);
-        return 1;
+        robot_state::RobotState kinematic_state(*arm.getCurrentState());
+        bool founk_ik = kinematic_state.setFromIK(joint_model_group,grasp_candidate_.grasp_pose.pose);
+        ROS_INFO_STREAM("found ik result" << founk_ik);
+
+        if(founk_ik)
+        {
+          arm.setPoseTarget(pose);
+          //arm.move();
+         // arm.pick("",grasp_candidate_);
+          return 1;
+        }
+        
       }
       else
       return 0;
@@ -116,10 +129,10 @@ public:
 
     bool move()
     {
-    if(this->arm.move())
+    if(arm.move())
     {
         ros::Duration(5).sleep();
-        this->arm.clearPoseTargets ();
+        arm.clearPoseTargets ();
         return 1;
     }
     else
@@ -128,7 +141,7 @@ public:
 
     bool stop()
     {
-      this->arm.stop();
+      arm.stop();
       return 1;
     }
 
@@ -153,7 +166,7 @@ public:
       ROS_INFO_STREAM("cb");
       std::lock_guard<std::mutex> lock(m_);
       ros::Time grasp_stamp = msg->header.stamp;
-      frame_id_ = "camera_link";
+      frame_id_ = msg->header.frame_id;
       ROS_INFO_STREAM(frame_id_);
       grasp_candidate_.grasp_pose.header.frame_id = frame_id_;
       grasp_candidate_.pre_grasp_approach.direction.header.frame_id = frame_id_;
@@ -186,6 +199,8 @@ public:
                                   grasp.approach.z, grasp.binormal.z, grasp.axis.z);
         Eigen::Matrix3d rotation_matrix;
         tf::matrixTFToEigen(orientation,rotation_matrix);
+
+        
         Eigen::Quaterniond q1(rotation_matrix);
         Eigen::Isometry3d T_Grasp(q1);
         T_Grasp.pretranslate(Eigen::Vector3d(grasp.top.x,grasp.top.y,grasp.top.z));
@@ -201,20 +216,22 @@ public:
 
         pose.position.x = t.getX();
         pose.position.y = t.getY();
-        pose.position.z = t.getZ();
+        pose.position.z = t.getZ() + 0.25;
         pose.orientation.x = q.getX();
         pose.orientation.y = q.getY();
         pose.orientation.z = q.getZ();
         pose.orientation.w = q.getW();
       
-        
+      
         /*
         tf::Quaternion orientation_quat;
         orientation.getRotation(orientation_quat);
         tf::quaternionTFToMsg(orientation_quat, pose.orientation);
-
         pose.position = grasp.top;
         */
+        
+        
+  
         
         ROS_INFO_STREAM(pose);
 

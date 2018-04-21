@@ -22,7 +22,7 @@ int main(int argc, char** argv)
       try
       {
         // from 2 to 1 
-        listener.lookupTransform("base", "world",ros::Time(0), transform);
+        listener.lookupTransform("base", "camera_link",ros::Time(0), transform);
       }
       catch(tf::TransformException ex)
       {

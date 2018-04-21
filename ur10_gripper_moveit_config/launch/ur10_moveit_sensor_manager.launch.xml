@@ -1,6 +1,6 @@
 <launch>
 
- <rosparam command="load" file="$(find ur10_gripper_moveit_config)/config/sensor_kinect_pointcloud.yaml" />
+ <!--<rosparam command="load" file="$(find ur10_gripper_moveit_config)/config/sensor_kinect_pointcloud.yaml" />-->
 
 </launch>
 
