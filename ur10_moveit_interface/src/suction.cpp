@@ -9,6 +9,8 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
 
+#include <moveit/move_group_interface/move_group_interface.h>
+
 #include <math.h>
 
 // Rotation and Translation 
@@ -26,7 +28,9 @@ int main(int argc, char *argv[])
   ros::Publisher pose_pub;
   pose_pub = nh.advertise<geometry_msgs::Pose>("pose", 1000);
   
-  /*surface normal*/
+
+  
+  /* surface normal calculation, needs to be changed to cb function */
   double x=0.167329, y=-0.3315, z=1.105;
   double n_x=0.0111406, n_y=-0.00943037, n_z=-0.999893;
   n_x = -(-n_x);
@@ -74,11 +78,28 @@ int main(int argc, char *argv[])
 
 
 
+  /* Moveit! setup */
+  moveit::planning_interface::MoveGroupInterface arm("arm");
+  arm.setStartStateToCurrentState();
+  arm.setPoseReferenceFrame("base");
+  arm.setPlannerId("LBKPIECEkConfigDefault");
+  arm.setPlanningTime(10);
+  arm.setMaxVelocityScalingFactor(0.02);
+  arm.setWorkspace(-2,2,-2,2,-2,2);
+  ros::Duration(1).sleep();
 
-  while(ros::ok())
+  robot_state::RobotState kinematic_state(*arm.getCurrentState());
+  const robot_state::JointModelGroup *joint_model_group = arm.getCurrentState()->getJointModelGroup("arm");
+  bool founk_ik = kinematic_state.setFromIK(joint_model_group,target);
+  if(founk_ik)
   {
-      pose_pub.publish(target);
-      ros::Duration(1).sleep();
+    ROS_INFO_STREAM("succeed to find IK");
+    arm.setPoseTarget(target);
+    arm.move();
+  }
+  else
+  {
+    ROS_INFO_STREAM("cannot find IK for this goal pose");
   }
 
 

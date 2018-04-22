@@ -35,7 +35,7 @@ from gqcnn import Visualizer as vis
 
 class MovePlan(object):
     def __init__(self,config):
-        rospy.init_node("gqcnn_node",anonymous=True)
+        rospy.init_node("gqcnn_base_grasp",anonymous=True)
         
         # Moveit! setup
         moveit_commander.roscpp_initialize(sys.argv)
@@ -51,12 +51,7 @@ class MovePlan(object):
         self.arm.set_max_acceleration_scaling_factor(0.02)
         self.arm.set_goal_orientation_tolerance(0.1)
         self.arm.set_workspace([-2,-2,-2,2,2,2])
-        self.gripper.set_goal_joint_tolerance(0.2)
-
-
-        print "============ Reference frame: %s" % self.arm.get_planning_frame()
-        print "============ End effector: %s" % self.arm.get_end_effector_link()  
-         
+        self.gripper.set_goal_joint_tolerance(0.2)         
 
         # messgae filter for image topic
         self.image_sub = message_filters.Subscriber("/camera/rgb/image_rect_color", Image)
@@ -120,7 +115,7 @@ class MovePlan(object):
             self.grasp_pose_base_frame =  self.listener.transformPose('base',grasp_pose_camera_frame_stamped)
             print (self.grasp_pose_base_frame.pose)
             self.pre_grasp_pose_base_frame = self.grasp_pose_base_frame
-            self.pre_grasp_pose_base_frame.pose.position.z += 0.15
+            self.pre_grasp_pose_base_frame.pose.position.z += 0.25
             self.pre_grasp_pose_base_frame.pose.position.x -= 0.01
             self.grasp_pose_base_frame.pose.position.z += 0.02
             self.grasp_pose_base_frame.pose.position.x -= 0.01
@@ -158,7 +153,6 @@ if __name__=='__main__':
 
     # loop for plan, move and grasp
     while not rospy.is_shutdown():
-        waypoints = []
         move_plan.start = 1
         if move_plan.start == 1:
             move_plan.start =0
@@ -182,25 +176,30 @@ if __name__=='__main__':
             move_plan.arm.clear_pose_targets()
             rospy.sleep(1)
             print ('arrive at pre-grasp pose now !')
-            '''      
-            pre_grasp_plan = move_plan.arm.plan()
-            move_plan.arm.execute(pre_grasp_plan)
-            '''
+
+            
             move_plan.arm.set_pose_target(move_plan.grasp_pose_base_frame)        
             move_plan.arm.go()
             print ('arrve at grasp pose now !')
+        
             
-            '''
+            ''' seems strange, need improve
             # Cartesian Paths
+            waypoints = []
+            waypoints.append(move_plan.arm.get_current_pose().pose)
             wpose = geometry_msgs.msg.Pose()
-            wpose.orientation.w = 1.0
-            wpose.position.z -= 0.24
+            wpose.orientation = waypoints[0].orientation
+            wpose.position.x = waypoints[0].position.x
+            wpose.position.y = waypoints[0].position.y
+            wpose.position.z = waypoints[0].position.z - 0.06
             waypoints.append(copy.deepcopy(wpose))
             grasp_plan, fraction = move_plan.arm.compute_cartesian_path(waypoints, 0.01, 0.0,avoid_collisions = True)
+            grasp_plan = move_plan.arm.retime_trajectory(move_plan.robot.get_current_state(),grasp_plan,0.02)
             move_plan.arm.execute(grasp_plan)
             rospy.sleep(2)
+            print ('arrve at grasp pose now !')
             '''
-        
+                    
             move_plan.gripper.set_named_target('close')
             move_plan.gripper.go(wait = True)
             move_plan.gripper.set_named_target('close')
@@ -208,6 +207,9 @@ if __name__=='__main__':
             move_plan.gripper.set_named_target('close')
             move_plan.gripper.go(wait = True)
             rospy.sleep(2)
+
+            move_plan.arm.set_named_target('place')
+            move_plan.arm.go()
 
 
     rospy.spin()    

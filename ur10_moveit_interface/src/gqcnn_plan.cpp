@@ -24,7 +24,7 @@ int start = 0;
 
 /* hand_eye_calibration result */
 Eigen::Quaterniond camera_rotation (0.022605849585286,   0.710758257317346,   0.702988984346954,   0.010870285487253); // w x y z 
-Eigen::Vector3d camera_translation(1.37996753865619, 0.219399064738647, 0.887545166846203);
+Eigen::Vector3d camera_translation(1.380737478650816, 0.220867800269379, 0.883465239696023);
 Eigen::Isometry3d camera_to_base(camera_rotation);
 
 
@@ -109,7 +109,7 @@ int main(int argc, char **argv)
    if(start == 1)
    {
      
-    /* add visualization*/
+    /* add visualization */
     tf::Quaternion tf_rotation;
     tf::quaternionMsgToTF(target_pose.orientation, tf_rotation);
     Eigen::Quaterniond eigen_rotation;
@@ -117,52 +117,56 @@ int main(int argc, char **argv)
     Eigen::AngleAxisd rotation_vector(eigen_rotation);
     ROS_INFO_STREAM("RX RY RZ: " << (rotation_vector.axis() * rotation_vector.angle()).transpose());
 
-    tf::Pose tf_pose;
-    Eigen::Affine3d end_effector_state;
+    /* get robot state */
+    robot_state::RobotState kinematic_state(*arm.getCurrentState());  
+    const robot_state::JointModelGroup *joint_model_group = arm.getCurrentState()->getJointModelGroup("arm");
 
-    robot_state::RobotState kinematic_state(*arm.getCurrentState());
-    
-    const robot_state::JointModelGroup *joint_model_arm = arm.getCurrentState()->getJointModelGroup("arm");;
-    tf::poseMsgToTF(target_pose,tf_pose);
-    tf::poseTFToEigen(tf_pose, end_effector_state);
-    bool found_ik = kinematic_state.setFromIK(joint_model_arm, target_pose); 
+    /* compute ik */
+    bool found_ik = kinematic_state.setFromIK(joint_model_group, target_pose); 
     ROS_INFO_STREAM("found_ik" << " " << found_ik);
     if(found_ik)
     {
       std::vector<double> joint_values;
-      kinematic_state.copyJointGroupPositions(joint_model_arm, joint_values);
+      kinematic_state.copyJointGroupPositions(joint_model_group, joint_values);
     }
+
     /*
-    arm.setPoseTarget(end_effector_state);
+    arm.setPoseTarget(target_pose);
     moveit::planning_interface::MoveGroupInterface::Plan plan;
     bool success = arm.plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
-    if(success)*/
-    
+    if(success)
       ROS_INFO_STREAM("plan succeed");
+    */
+    
+
       gripper.setNamedTarget("open");
       gripper.move();
       ros::Duration(2).sleep();
+
       /* first to pre-grasp pose*/
       arm.setPoseTarget(pre_grasp_pose);
       arm.move();
       ros::Duration(2).sleep();
+      
       /* grasp pose */
       arm.setPoseTarget(target_pose);
       arm.move();
-      /*arm.execute(plan);*/
-      ros::Duration(5).sleep();
+      ros::Duration(2).sleep();
       arm.clearPoseTarget();
+
       /* gripper grasp */
       gripper.setNamedTarget("close");
       gripper.move();
-      ros::Duration(5).sleep();
-      /* move to pre-difined place pose*/
+      ros::Duration(2).sleep();
+
+      /* move to pre-difined place pose */
       arm.setNamedTarget("hold");
       arm.move();
-      ros::Duration(5).sleep();
+      ros::Duration(2).sleep();
+
       /* gripper open */
       gripper.setNamedTarget("open");
-      ros::Duration(5).sleep();  
+      ros::Duration(2).sleep();  
 
       /*
       gp.position = 255;

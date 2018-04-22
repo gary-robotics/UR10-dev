@@ -23,6 +23,7 @@ import sys
         wpose.position.z -= 0.24
         waypoints.append(copy.deepcopy(wpose))
         grasp_plan, fraction = move_plan.arm.compute_cartesian_path(waypoints, 0.01, 0.0,avoid_collisions = True)
+        plan = moveit_
         move_plan.arm.execute(grasp_plan)
         rospy.sleep(2)
         move_plan.gripper.set_named_target('close')

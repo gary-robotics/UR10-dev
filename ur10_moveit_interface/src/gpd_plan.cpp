@@ -32,10 +32,10 @@ using namespace std;
 
 
 Eigen::Quaterniond camera_rotation (0.022605849585286,   0.710758257317346,   0.702988984346954,   0.010870285487253); // w x y z
-Eigen::Vector3d camera_translation(1.37996753865619, 0.219399064738647, 0.887545166846203);
+Eigen::Vector3d camera_translation(1.380737478650816, 0.220867800269379, 0.883465239696023);
 Eigen::Isometry3d camera_to_base(camera_rotation);
 
-
+bool start;
 
 class MoveitPlan
 {
@@ -44,6 +44,7 @@ private:
     moveit::planning_interface::MoveGroupInterface arm;
     moveit::planning_interface::MoveGroupInterface gripper;
     moveit::planning_interface::PlanningSceneInterface plan_scene;
+    moveit::planning_interface::MoveGroupInterface::Plan arm_plan;
     moveit::planning_interface::MoveGroupInterface::Plan grasp_plan;
     robot_model_loader::RobotModelLoader robot_model_loader;
     robot_model::RobotModelPtr kinematic_model ;
@@ -51,12 +52,12 @@ private:
     moveit_msgs::Grasp grasp_candidate_;
     string frame_id_;
     std::vector<double> joint_values;
-    bool start;
     double grasp_offset_;
     std::mutex m_;
     ros::Subscriber sub_; 
     ros::Publisher pub_;
-    geometry_msgs::Pose pose;
+    geometry_msgs::Pose grasp_pose;
+    geometry_msgs::Pose pre_grasp_pose;
 
 public: 
     MoveitPlan(ros::NodeHandle &n): arm("arm"),gripper("gripper"),robot_model_loader("robot_description")
@@ -68,12 +69,12 @@ public:
        
           arm.setMaxVelocityScalingFactor(0.02);
           arm.setPoseReferenceFrame("base");
-          arm.allowReplanning(true);
-          arm.setNumPlanningAttempts(5);
           arm.setStartStateToCurrentState();
           arm.setPlannerId("RRTConnectkConfigDefault");
           arm.setWorkspace(-2,2,-2,2,-2,2);
-          arm.setPlanningTime(20);
+          arm.setPlanningTime(10);
+          arm.setGoalOrientationTolerance(0.03);
+          arm.setGoalPositionTolerance(0.01);
 
           grasp_interface::RCGripperCommand gp;
           
@@ -81,70 +82,143 @@ public:
           grasp_offset_ = 0;
           grasp_candidate_.id = "grasp";
           
-
           grasp_candidate_.pre_grasp_approach.min_distance = 0.25;
           grasp_candidate_.pre_grasp_approach.desired_distance = 0.30;
-          
-
-          
+               
           grasp_candidate_.post_grasp_retreat.min_distance = 0.13;
           grasp_candidate_.post_grasp_retreat.desired_distance = 0.15;
           grasp_candidate_.post_grasp_retreat.direction.header.frame_id = arm.getPlanningFrame();
           grasp_candidate_.post_grasp_retreat.direction.vector.z = 1.0; 
           
-          
-
-
-
           jointValuesToJointTrajectory(gripper.getNamedTargetValues("open"), ros::Duration(1.0), grasp_candidate_.pre_grasp_posture);
           jointValuesToJointTrajectory(gripper.getNamedTargetValues("close"), ros::Duration(2.0), grasp_candidate_.grasp_posture);
           
           kinematic_model = robot_model_loader.getModel();
-          ROS_INFO("Model frame: %s", kinematic_model->getModelFrame().c_str());
           joint_model_group = kinematic_model->getJointModelGroup("arm");
           start = false;
     }
 
-    bool plan()
+    bool pre_grasp()
     {
       if(start)
       {
+        arm.clearPoseTargets();
         robot_state::RobotState kinematic_state(*arm.getCurrentState());
-        bool founk_ik = kinematic_state.setFromIK(joint_model_group,grasp_candidate_.grasp_pose.pose);
-        ROS_INFO_STREAM("found ik result" << founk_ik);
-
-        if(founk_ik)
+        bool found_ik = kinematic_state.setFromIK(joint_model_group,pre_grasp_pose);
+        if(found_ik)
         {
-          arm.setPoseTarget(pose);
-          //arm.move();
-         // arm.pick("",grasp_candidate_);
-          return 1;
+          ROS_INFO_STREAM("succeed to find IK for pre-grasp");
+          gripper.setNamedTarget("open");
+          gripper.move();
+          gripper.setNamedTarget("open");
+          gripper.move();
+          gripper.setNamedTarget("open");
+          gripper.move();
+          arm.setPoseTarget(pre_grasp_pose);
+          bool success = arm.plan(arm_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+          if(success)
+          {
+            ROS_INFO_STREAM("succeed to plan for pre-grasp");
+            arm.move();
+            return 1;
+          }
+          else
+          {
+            ROS_INFO_STREAM("fail to plan for pre-grasp");
+            return 0;
+          }
+
+        } 
+        else
+        {
+          ROS_INFO_STREAM("fail to find IK for pre-grasp");
+          return 0;
         }
-        
+
+      }
+    }
+
+    bool grasp()
+    {
+      if(start)
+      {
+        arm.clearPoseTargets();
+        robot_state::RobotState kinematic_state(*arm.getCurrentState());
+        bool found_ik = kinematic_state.setFromIK(joint_model_group,grasp_pose);
+        if(found_ik)
+        {
+          ROS_INFO_STREAM("succeed to find IK for grasp");
+          arm.setPoseTarget(grasp_pose);
+          bool success = arm.plan(arm_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+          if(success)
+          {
+            ROS_INFO_STREAM("succeed to plan for grasp");
+            arm.move();
+            ros::Duration(1).sleep();
+            gripper.setNamedTarget("close");
+            gripper.move();
+            gripper.setNamedTarget("close");
+            gripper.move();
+            gripper.setNamedTarget("close");
+            gripper.move();
+            return 1;
+          }
+          else
+          {
+            ROS_INFO_STREAM("fail to plan for grasp");
+            return 0;
+          }
+
+        }
+        else
+        {
+          ROS_INFO_STREAM("fail to find IK for grasp");
+          return 0;
+        }
+      }
+    }
+
+    bool hold()
+    {
+
+      arm.clearPoseTargets();
+      arm.setNamedTarget("hold");
+      bool success = arm.plan(arm_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+      if(success)
+      {
+        ROS_INFO_STREAM("succeed to plan for hold");
+        arm.move();
+        return 1;
       }
       else
-      return 0;
-    }
-
-
-    bool move()
-    {
-    if(arm.move())
-    {
-        ros::Duration(5).sleep();
-        arm.clearPoseTargets ();
-        return 1;
-    }
-    else
+      {
+        ROS_INFO_STREAM("fail to plan for hold");
         return 0;
+      }
     }
 
-    bool stop()
+    bool place()
+    {
+      arm.clearPoseTargets();
+      arm.setNamedTarget("place");
+      bool success = arm.plan(arm_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
+      if(success)
+      {
+        ROS_INFO_STREAM("succeed to plan for place");
+        arm.move();
+        return 1;
+      }
+      else
+      {
+        ROS_INFO_STREAM("succeed to plan for place");
+        return 0;
+      }      
+    }
+    
+    void stop()
     {
       arm.stop();
-      return 1;
     }
-
 
     void jointValuesToJointTrajectory(std::map<std::string, double> target_values, ros::Duration duration,
             trajectory_msgs::JointTrajectory &grasp_pose)
@@ -167,7 +241,6 @@ public:
       std::lock_guard<std::mutex> lock(m_);
       ros::Time grasp_stamp = msg->header.stamp;
       frame_id_ = msg->header.frame_id;
-      ROS_INFO_STREAM(frame_id_);
       grasp_candidate_.grasp_pose.header.frame_id = frame_id_;
       grasp_candidate_.pre_grasp_approach.direction.header.frame_id = frame_id_;
 
@@ -214,13 +287,16 @@ public:
         tf::quaternionEigenToTF(q2,q);
         tf::vectorEigenToTF(base_t,t);
 
-        pose.position.x = t.getX();
-        pose.position.y = t.getY();
-        pose.position.z = t.getZ() + 0.25;
-        pose.orientation.x = q.getX();
-        pose.orientation.y = q.getY();
-        pose.orientation.z = q.getZ();
-        pose.orientation.w = q.getW();
+        grasp_pose.position.x = t.getX();
+        grasp_pose.position.y = t.getY();
+        grasp_pose.position.z = t.getZ() + 0.25;
+        grasp_pose.orientation.x = q.getX();
+        grasp_pose.orientation.y = q.getY();
+        grasp_pose.orientation.z = q.getZ();
+        grasp_pose.orientation.w = q.getW();
+
+        pre_grasp_pose = grasp_pose;
+        pre_grasp_pose.position.z = pre_grasp_pose.position.z + 0.40;
       
       
         /*
@@ -229,13 +305,10 @@ public:
         tf::quaternionTFToMsg(orientation_quat, pose.orientation);
         pose.position = grasp.top;
         */
-        
-        
-  
-        
-        ROS_INFO_STREAM(pose);
 
-        return pose;
+        ROS_INFO_STREAM(grasp_pose);
+
+        return grasp_pose;
     }
 };
 
@@ -253,15 +326,29 @@ int main(int argc, char **argv)
   ros::AsyncSpinner spinner(2);
   spinner.start();
 
-
-
   ROS_INFO_STREAM("in main");
   while(ros::ok())
   {
-  if(moveit_plan->plan())
-    if(moveit_plan->move())
-    // move to the pre-defined pose
-        continue;
+    if(start)
+    {
+      if(moveit_plan->hold())
+      {
+        ROS_INFO_STREAM("arrive at hold pose");
+        if(moveit_plan->pre_grasp())
+        {
+          ROS_INFO_STREAM("arrive at pre-grasp pose");
+          if(moveit_plan->grasp())
+          {
+            ROS_INFO_STREAM("arrive at grasp pose");
+            if(moveit_plan->place())
+            {
+              ROS_INFO_STREAM("arrive at place pose");
+              continue;
+            }
+          }
+        }
+      }
+    }
   }
   moveit_plan->stop();
 
