@@ -211,10 +211,7 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(gqcnn_plan 
-  src/gqcnn_plan.cpp)
-add_dependencies(gqcnn_plan ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(gqcnn_plan ${catkin_LIBRARIES})
+
 
 add_executable(suction src/suction.cpp)
 target_link_libraries(suction ${catkin_LIBRARIES})

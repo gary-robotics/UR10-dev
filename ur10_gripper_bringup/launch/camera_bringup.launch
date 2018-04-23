@@ -3,6 +3,7 @@
 
     <!-- Kinect -->
     <include file="$(find freenect_launch)/launch/freenect.launch">
+        <arg name="depth_registration" value="true"/>
     </include> 
     
     <!-- broadcast camera_to_base transfrom-->
