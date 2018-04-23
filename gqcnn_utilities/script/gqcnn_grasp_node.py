@@ -55,7 +55,7 @@ class MovePlan(object):
 
         # messgae filter for image topic
         self.image_sub = message_filters.Subscriber("/camera/rgb/image_rect_color", Image)
-        self.depth_sub = message_filters.Subscriber("/camera/depth_registered/sw_registered/image_rect", Image)
+        self.depth_sub = message_filters.Subscriber("/camera/depth_registered/hw_registered/image_rect", Image)
         self.camera_info_topic = "/camera/rgb/camera_info"
         self.camera_info = rospy.wait_for_message(self.camera_info_topic,CameraInfo,timeout=3)
         self.ts = message_filters.ApproximateTimeSynchronizer([self.image_sub, self.depth_sub], 1, 1)
@@ -113,7 +113,7 @@ class MovePlan(object):
             grasp_pose_camera_frame_stamped.header.stamp = rospy.Time(0)
             self.grasp_success_prob = response.grasp.grasp_success_prob    
             self.grasp_pose_base_frame =  self.listener.transformPose('base',grasp_pose_camera_frame_stamped)
-            print (self.grasp_pose_base_frame.pose)
+            rospy.loginfo (self.grasp_pose_base_frame.pose)
             self.pre_grasp_pose_base_frame = self.grasp_pose_base_frame
             self.pre_grasp_pose_base_frame.pose.position.z += 0.25
             self.pre_grasp_pose_base_frame.pose.position.x -= 0.01
@@ -122,26 +122,25 @@ class MovePlan(object):
             self.start_ik = 1
             
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            print ('look up transform failed')
+            rospy.loginfo ('look up transform failed')
 
-    '''
-    this function still needs development
-    '''
+
     def compute_ik_pose(self, grasp_pose):
+        self.service_request.robot_state = self.robot.get_current_state()
         self.service_request.pose_stamped = grasp_pose
         try:
             self.resp = self.ik_srv.call(self.service_request)
-            if(self.resp.error_code == 1):
-                print ('compute IK succeed')
+            if(self.resp.error_code):
+                rospy.loginfo ('compute IK succeed')
                 self.start_ik = 0
                 return 1
             else:
-                print ('compute IK fail')
-                print (self.resp)
+                rospy.loginfo ('compute IK fail')
+                rospy.loginfo (self.resp)
                 self.start_ik = 0
                 return 0
         except rospy.ServiceException, e:
-            print ("Service call failed: %s"%e)
+            rospy.loginfo ("Service call failed: %s"%e)
             return 0
     
 
@@ -156,7 +155,12 @@ if __name__=='__main__':
         move_plan.start = 1
         if move_plan.start == 1:
             move_plan.start =0
-            print ('in main')
+            rospy.loginfo ('in main')
+
+            # hold on     
+            move_plan.arm.set_named_target('hold')
+            move_plan.arm.go()
+            rospy.loginfo('arrive at hold pose now !')
 
             move_plan.call_gqcnn_srv()
 
@@ -168,19 +172,32 @@ if __name__=='__main__':
             move_plan.gripper.set_named_target('open')
             move_plan.gripper.go(wait = True)
             rospy.sleep(2)
-            
+            rospy.loginfo('gripper opened')
 
-            # if move_plan.compute_ik_pose(move_plan.grasp_pose_base_frame):
-            move_plan.arm.set_pose_target(move_plan.pre_grasp_pose_base_frame)  
-            move_plan.arm.go()
-            move_plan.arm.clear_pose_targets()
-            rospy.sleep(1)
-            print ('arrive at pre-grasp pose now !')
+            if move_plan.compute_ik_pose(move_plan.pre_grasp_pose_base_frame):
+                move_plan.arm.set_pose_target(move_plan.pre_grasp_pose_base_frame)  
+                move_plan.arm.go()
+                move_plan.arm.clear_pose_targets()
+                rospy.sleep(1)
+                rospy.loginfo ('arrive at pre-grasp pose now !')
+           
+                if move_plan.compute_ik_pose(move_plan.grasp_pose_base_frame):
+                    move_plan.arm.set_pose_target(move_plan.grasp_pose_base_frame)        
+                    move_plan.arm.go()
+                    rospy.loginfo ('arrve at grasp pose now !')
 
-            
-            move_plan.arm.set_pose_target(move_plan.grasp_pose_base_frame)        
-            move_plan.arm.go()
-            print ('arrve at grasp pose now !')
+                    move_plan.gripper.set_named_target('close')
+                    move_plan.gripper.go(wait = True)
+                    move_plan.gripper.set_named_target('close')
+                    move_plan.gripper.go(wait = True)
+                    move_plan.gripper.set_named_target('close')
+                    move_plan.gripper.go(wait = True)
+                    rospy.sleep(2)
+                    rospy.loginfo('gripper closed')
+
+                    move_plan.arm.set_named_target('place')
+                    move_plan.arm.go()
+                    rospy.loginfo('arrive at place pose now !')
         
             
             ''' seems strange, need improve
@@ -197,21 +214,9 @@ if __name__=='__main__':
             grasp_plan = move_plan.arm.retime_trajectory(move_plan.robot.get_current_state(),grasp_plan,0.02)
             move_plan.arm.execute(grasp_plan)
             rospy.sleep(2)
-            print ('arrve at grasp pose now !')
+            rospy.loginfo ('arrve at grasp pose now !')
             '''
                     
-            move_plan.gripper.set_named_target('close')
-            move_plan.gripper.go(wait = True)
-            move_plan.gripper.set_named_target('close')
-            move_plan.gripper.go(wait = True)
-            move_plan.gripper.set_named_target('close')
-            move_plan.gripper.go(wait = True)
-            rospy.sleep(2)
-
-            move_plan.arm.set_named_target('place')
-            move_plan.arm.go()
-
-
     rospy.spin()    
 
     
