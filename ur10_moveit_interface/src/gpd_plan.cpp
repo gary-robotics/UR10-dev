@@ -1,3 +1,7 @@
+/**grasp plan for gpd
+  @author Alex Wang
+*/
+
 
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
