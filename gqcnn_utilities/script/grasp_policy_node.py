@@ -153,18 +153,6 @@ if __name__ == '__main__':
     np.save("/home/ros/ur10_ws/src/gqcnn/data/rgbd/multiple_objects/depth_0.npy",depth_img.data)
     cv2.imwrite("/home/ros/ur10_ws/src/gqcnn/data/rgbd/multiple_objects/color_0.png",color_img.data)
 
-    '''
-    color_img = cv_bridge.imgmsg_to_cv2(color_img,"bgr8")
-    depth_img = cv_bridge.imgmsg_to_cv2(depth_img,"passthrough")
-    depth_img = np.array(depth_img, dtype=np.float32) / 1000.0
-    depth_img[np.isnan(depth_img)] = 0
-    cv2.normalize(depth_img, depth_img, 0, 1, cv2.NORM_MINMAX)  
-    depth_img = np.expand_dims(depth_img,2)
-    print(depth_img)  
-    np.save("/home/ros/ur10_ws/src/gqcnn/data/rgbd/multiple_objects/depth_0.npy",depth_img)
-    cv2.imwrite("/home/ros/ur10_ws/src/gqcnn/data/rgbd/multiple_objects/color_0.png",color_img)
-    '''
-
     # set up logger
     logging.getLogger().setLevel(logging.DEBUG)
 

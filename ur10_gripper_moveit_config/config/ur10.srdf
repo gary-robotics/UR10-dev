@@ -36,7 +36,7 @@
         <joint name="shoulder_pan_joint" value="0.9666" />
         <joint name="wrist_1_joint" value="-3.0725" />
         <joint name="wrist_2_joint" value="-1.5535" />
-        <joint name="wrist_3_joint" value="-1.7261" />
+        <joint name="wrist_3_joint" value="-0.1381" />
     </group_state>
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <end_effector name="gripper_eef" parent_link="ee_link" group="gripper" parent_group="arm" />

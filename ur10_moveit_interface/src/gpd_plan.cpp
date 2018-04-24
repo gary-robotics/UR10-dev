@@ -1,8 +1,3 @@
-/**grasp plan for gpd
-  @author Alex Wang
-*/
-
-
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
 #include <tf_conversions/tf_eigen.h>
@@ -35,8 +30,8 @@
 using namespace std;
 
 
-Eigen::Quaterniond camera_rotation (0.022605849585286,   0.710758257317346,   0.702988984346954,   0.010870285487253); // w x y z
-Eigen::Vector3d camera_translation(1.380737478650816, 0.220867800269379, 0.883465239696023);
+Eigen::Quaterniond camera_rotation (0.011651763924937,0.724653150487702,0.689015272988343,-0.000038399023251); // w x y z
+Eigen::Vector3d camera_translation(1.236198544416497, 0.243724848741023, 0.958845055486651);
 Eigen::Isometry3d camera_to_base(camera_rotation);
 
 bool start;
@@ -71,7 +66,7 @@ public:
           pub_ = n.advertise<grasp_interface::RCGripperCommand>("grip_command",1);
 
        
-          arm.setMaxVelocityScalingFactor(0.02);
+          arm.setMaxVelocityScalingFactor(0.04);
           arm.setPoseReferenceFrame("base");
           arm.setStartStateToCurrentState();
           arm.setPlannerId("RRTConnectkConfigDefault");
@@ -123,6 +118,8 @@ public:
           if(success)
           {
             ROS_INFO_STREAM("succeed to plan for pre-grasp");
+            ROS_INFO_STREAM(pre_grasp_pose);
+
             arm.move();
             return 1;
           }
@@ -157,6 +154,7 @@ public:
           if(success)
           {
             ROS_INFO_STREAM("succeed to plan for grasp");
+            ROS_INFO_STREAM(grasp_pose);
             arm.move();
             ros::Duration(1).sleep();
             gripper.setNamedTarget("close");
@@ -293,7 +291,7 @@ public:
 
         grasp_pose.position.x = t.getX();
         grasp_pose.position.y = t.getY();
-        grasp_pose.position.z = t.getZ() + 0.25;
+        grasp_pose.position.z = t.getZ() + 0.1;
         grasp_pose.orientation.x = q.getX();
         grasp_pose.orientation.y = q.getY();
         grasp_pose.orientation.z = q.getZ();
@@ -309,8 +307,6 @@ public:
         tf::quaternionTFToMsg(orientation_quat, pose.orientation);
         pose.position = grasp.top;
         */
-
-        ROS_INFO_STREAM(grasp_pose);
 
         return grasp_pose;
     }
@@ -333,21 +329,23 @@ int main(int argc, char **argv)
   ROS_INFO_STREAM("in main");
   while(ros::ok())
   {
-    if(start)
+    if(moveit_plan->hold())
     {
-      if(moveit_plan->hold())
+      if(start)
       {
-        ROS_INFO_STREAM("arrive at hold pose");
-        if(moveit_plan->pre_grasp())
         {
-          ROS_INFO_STREAM("arrive at pre-grasp pose");
-          if(moveit_plan->grasp())
+          ROS_INFO_STREAM("arrive at hold pose");
+          if(moveit_plan->pre_grasp())
           {
-            ROS_INFO_STREAM("arrive at grasp pose");
-            if(moveit_plan->place())
+            ROS_INFO_STREAM("arrive at pre-grasp pose");
+            if(moveit_plan->grasp())
             {
-              ROS_INFO_STREAM("arrive at place pose");
-              continue;
+              ROS_INFO_STREAM("arrive at grasp pose");
+              if(moveit_plan->place())
+              {
+                ROS_INFO_STREAM("arrive at place pose");
+                continue;
+              }
             }
           }
         }
