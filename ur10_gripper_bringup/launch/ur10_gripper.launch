@@ -4,9 +4,9 @@
     <arg name="sim" default="false"/>
     <!-- real robot -->
     <include file="$(find ur10_gripper_bringup)/launch/ur10_robot.launch"/>
-
+    <!-- robot_gripper_bringup -->
     <!-- gripper -->
-    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find robotiq_arg2f_model_visualization)/urdf/robotiq_arg2f_140_model.xacro'" />
+    <param name="ur_description" command="$(find xacro)/xacro --inorder '$(find robotiq_arg2f_model_visualization)/urdf/robotiq_arg2f_140_model.xacro'" />
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" >
      <rosparam param="source_list">[/gripper/joint_states,/joint_states]</rosparam>
      <arg name="use_gui" default="true"/>

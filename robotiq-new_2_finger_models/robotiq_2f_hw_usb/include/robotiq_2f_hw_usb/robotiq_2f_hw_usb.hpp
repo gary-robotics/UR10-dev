@@ -98,7 +98,7 @@ public:
 	 */
 	void write()
 	{
-		setPositionEffort(joint_position_command_.at(0), 9.0, rq_cmd_);
+		setPositionEffort(joint_position_command_.at(0), 4.0, rq_cmd_);  ///////
 
 		int rc = modbus_write_registers(ctx_ptr_, CMD_ADDR, 9, rq_cmd_.buffer);
 		if(rc < 0)

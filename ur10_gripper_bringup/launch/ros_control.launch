@@ -5,7 +5,7 @@
 
     <rosparam file="$(find ur10_gripper_moveit_config)/config/gripper_controller.yaml" command="load" />
 
-    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller joint_position_controller --timeout 5"/>
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller joint_position_controller "/> <!-- timeout 5-->
 
     <node name="simple_gripper_hw" pkg="robotiq_2f_hw_usb" type="robotiq_2f_hw_usb_node" respawn="false" output="screen">
 	<param name="port" type="str" value="/dev/ttyUSB0"/>

@@ -2,7 +2,7 @@
 <!-- note: controllers.yaml in moveit_config has to be setup for specific controller -->
 <!--runs the real robot setup on the local machine-->
 <launch>
-  <arg name="robot_ip" default="219.223.238.121"/>
+  <arg name="robot_ip" default="219.223.238.239"/>
   <arg name="limited" default="true"/>
 
   <include file="$(find ur_modern_driver)/launch/ur10_bringup.launch">

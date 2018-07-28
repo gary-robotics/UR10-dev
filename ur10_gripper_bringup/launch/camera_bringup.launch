@@ -3,10 +3,10 @@
 
     <!-- Kinect -->
     <include file="$(find freenect_launch)/launch/freenect.launch">
-        <arg name="depth_registration" value="true"/>
+       <arg name="depth_registration" value="true"/>
     </include> 
     
     <!-- broadcast camera_to_base transfrom-->
-   <node name="tf_broadcaster" pkg="ur10_setup_tf" type="tf_broadcaster" /> 
+   <node name="tf_broadcaster" pkg="frame_broadcaster" type="tf_broadcaster" /> 
 
 </launch>

@@ -37,7 +37,6 @@
   <xacro:property name="ur10_d4" value="0.163941" />
   <xacro:property name="ur10_d5" value="0.1157" />
   <xacro:property name="ur10_d6" value="0.0922" />
-
   <!-- Arbitrary offsets for shoulder/elbow joints -->
   <xacro:property name="shoulder_offset" value="0.220941" />  <!-- measured from model -->
   <xacro:property name="elbow_offset" value="-0.1719" /> <!-- measured from model -->
@@ -285,11 +284,11 @@
         <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
       </xacro:cylinder_inertial>
     </link>
-
+    <!-- ee_link add 20cm -->
     <joint name="${prefix}ee_fixed_joint" type="fixed">
       <parent link="${prefix}wrist_3_link" />
       <child link = "${prefix}ee_link" />
-      <origin xyz="0.0 ${wrist_3_length} 0.0" rpy="0.0 0.0 ${pi/2.0}" />
+      <origin xyz="0.0 ${wrist_3_length+0.20} 0.0" rpy="0.0 0.0 ${pi/2.0}" />
     </joint>
 
     <link name="${prefix}ee_link">

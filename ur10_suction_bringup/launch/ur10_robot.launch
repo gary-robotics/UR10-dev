@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <arg name="robot_ip" default="219.223.236.255"/>
+  <arg name="limited" default="true"/>
+
+  <include file="$(find ur_modern_driver)/launch/ur10_bringup.launch">
+    <arg name="limited" value="$(arg limited)"/>
+    <arg name="robot_ip" value="$(arg robot_ip)"/>
+  </include>
+
+</launch>

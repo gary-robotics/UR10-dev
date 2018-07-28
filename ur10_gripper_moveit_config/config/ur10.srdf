@@ -28,25 +28,33 @@
         <joint name="finger_joint" value="0.7495" />
     </group_state>
     <group_state name="open" group="gripper">
-        <joint name="finger_joint" value="0.0043" />
+        <joint name="finger_joint" value="0.1022" />
     </group_state>
     <group_state name="place" group="arm">
-        <joint name="elbow_joint" value="-1.3464" />
-        <joint name="shoulder_lift_joint" value="-2.0713" />
-        <joint name="shoulder_pan_joint" value="0.9666" />
-        <joint name="wrist_1_joint" value="-3.0725" />
-        <joint name="wrist_2_joint" value="-1.5535" />
-        <joint name="wrist_3_joint" value="-0.1381" />
+        <joint name="elbow_joint" value="-1.2083" />
+        <joint name="shoulder_lift_joint" value="-1.9332" />
+        <joint name="shoulder_pan_joint" value="-0.3107" />
+        <joint name="wrist_1_joint" value="-1.519" />
+        <joint name="wrist_2_joint" value="1.588" />
+        <joint name="wrist_3_joint" value="-0.2762" />
     </group_state>
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <end_effector name="gripper_eef" parent_link="ee_link" group="gripper" parent_group="arm" />
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
     <virtual_joint name="fixed_base" type="fixed" parent_frame="base" child_link="base_link" />
+    <!--PASSIVE JOINT: Purpose: this element is used to mark joints that are not actuated-->
+    <passive_joint name="left_inner_finger_joint" />
+    <passive_joint name="left_inner_knuckle_joint" />
+    <passive_joint name="right_inner_knuckle_joint" />
+    <passive_joint name="right_outer_knuckle_joint" />
+    <passive_joint name="right_inner_finger_joint" />
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="base_link" link2="floor" reason="Adjacent" />
+    <disable_collisions link1="base_link" link2="iron_frame_link" reason="Adjacent" />
     <disable_collisions link1="base_link" link2="shoulder_link" reason="Adjacent" />
     <disable_collisions link1="base_link" link2="upper_arm_link" reason="Never" />
     <disable_collisions link1="base_link" link2="wrist_1_link" reason="Never" />
+    <disable_collisions link1="ee_link" link2="iron_frame_link" reason="Never" />
     <disable_collisions link1="ee_link" link2="left_inner_finger" reason="Never" />
     <disable_collisions link1="ee_link" link2="left_inner_knuckle" reason="Never" />
     <disable_collisions link1="ee_link" link2="left_outer_finger" reason="Never" />
@@ -59,9 +67,25 @@
     <disable_collisions link1="ee_link" link2="wrist_1_link" reason="Never" />
     <disable_collisions link1="ee_link" link2="wrist_2_link" reason="Never" />
     <disable_collisions link1="ee_link" link2="wrist_3_link" reason="Adjacent" />
+    <disable_collisions link1="floor" link2="iron_frame_link" reason="Never" />
     <disable_collisions link1="floor" link2="shoulder_link" reason="Never" />
+    <disable_collisions link1="forearm_link" link2="iron_frame_link" reason="Never" />
     <disable_collisions link1="forearm_link" link2="upper_arm_link" reason="Adjacent" />
     <disable_collisions link1="forearm_link" link2="wrist_1_link" reason="Adjacent" />
+    <disable_collisions link1="iron_frame_link" link2="left_inner_finger" reason="Never" />
+    <disable_collisions link1="iron_frame_link" link2="left_inner_knuckle" reason="Never" />
+    <disable_collisions link1="iron_frame_link" link2="left_outer_finger" reason="Never" />
+    <disable_collisions link1="iron_frame_link" link2="left_outer_knuckle" reason="Never" />
+    <disable_collisions link1="iron_frame_link" link2="right_inner_finger" reason="Never" />
+    <disable_collisions link1="iron_frame_link" link2="right_inner_knuckle" reason="Never" />
+    <disable_collisions link1="iron_frame_link" link2="right_outer_finger" reason="Never" />
+    <disable_collisions link1="iron_frame_link" link2="right_outer_knuckle" reason="Never" />
+    <disable_collisions link1="iron_frame_link" link2="robotiq_arg2f_base_link" reason="Never" />
+    <disable_collisions link1="iron_frame_link" link2="shoulder_link" reason="Never" />
+    <disable_collisions link1="iron_frame_link" link2="upper_arm_link" reason="Never" />
+    <disable_collisions link1="iron_frame_link" link2="wrist_1_link" reason="Never" />
+    <disable_collisions link1="iron_frame_link" link2="wrist_2_link" reason="Never" />
+    <disable_collisions link1="iron_frame_link" link2="wrist_3_link" reason="Never" />
     <disable_collisions link1="left_inner_finger" link2="left_inner_knuckle" reason="Default" />
     <disable_collisions link1="left_inner_finger" link2="left_outer_finger" reason="Adjacent" />
     <disable_collisions link1="left_inner_finger" link2="left_outer_knuckle" reason="Never" />

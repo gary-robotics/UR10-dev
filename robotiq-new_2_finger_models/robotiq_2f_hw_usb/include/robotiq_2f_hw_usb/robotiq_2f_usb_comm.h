@@ -11,7 +11,7 @@ const int MSR_ADDR = 0x07D0;
 // the activation cmd also contains the default values for the GoTo command
 // speed in device at 100%, the decimation is done by the joint_trajectory controller
 // effort in device at 0
-const uint16_t ACTIVATION_CMD[3] = {(1 + (1 << 3) + (0 << 4)) << 8, 0x0000, (0xFF << 8) + 0xFF};
+const uint16_t ACTIVATION_CMD[3] = {(1 + (1 << 3) + (0 << 4)) << 8, 0x0000, (0x7F << 8) + 0x00}; ///////
 // the reset command clears all values, clears all faults
 // and stops any current motion
 const uint16_t RESET_CMD[3] = {0x0, 0x0, 0x0};
@@ -43,7 +43,7 @@ void setPositionEffort(const double &pos, const double &eff, rq_comm &cmd)
 	uint8_t u_pos = std::lround( (255*pos/POS_MAX));
 	uint8_t u_eff = std::lround( (255*eff/EFF_MAX));
 	cmd.buffer[1] = (0x0 << 8) + u_pos;
-	cmd.buffer[2] = (0xFF << 8) + u_eff; // 0xFFFF;
+	cmd.buffer[2] = (0x7F << 8) + u_eff; // 0x7F00;  ///////
 };
 
 void setPositionVelocityEffort(const double &pos, const double &vel, const double &eff, rq_comm &cmd)

@@ -140,13 +140,13 @@ from cv_bridge import CvBridge
 if __name__ == '__main__':
     # ros 
     rospy.init_node("gqcnn_policy")
-    color_img = rospy.wait_for_message("/camera/rgb/image_rect_color",Image,timeout=2)
-    depth_img = rospy.wait_for_message("/camera/depth_registered/sw_registered/image_rect",Image,timeout=3)
+    color_img = rospy.wait_for_message("/camera/rgb/image_raw",Image,timeout=2)
+    depth_img = rospy.wait_for_message("/camera/depth_registered/image_raw",Image,timeout=3)
     cv_bridge = CvBridge()
     
     color_img = cv_bridge.imgmsg_to_cv2(color_img,"bgr8")
     color_img = perception.ColorImage(color_img)
-    depth_img = cv_bridge.imgmsg_to_cv2(depth_img,"passthrough")
+    depth_img = cv_bridge.imgmsg_to_cv2(depth_img,"passthrough") * 1.0
     depth_img = perception.DepthImage(depth_img)
     color_img = color_img.inpaint()
     depth_img = depth_img.inpaint()  
