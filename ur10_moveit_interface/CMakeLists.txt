@@ -9,12 +9,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++0x")
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  roscpp
   moveit_core
   moveit_ros_planning
   moveit_ros_planning_interface
   tf_conversions
   tf
-  roscpp
   geometry_msgs
   std_msgs
   message_generation
@@ -118,7 +118,7 @@ catkin_package(
 #  LIBRARIES ur10_moveit_interface
 #  CATKIN_DEPENDS moveit_ros_planning_interface roscpp
 #  DEPENDS system_lib
-   CATKIN_DEPENDS message_runtime gpd grasp_interface
+   CATKIN_DEPENDS message_runtime gpd grasp_interface roscpp
 )
 
 ###########

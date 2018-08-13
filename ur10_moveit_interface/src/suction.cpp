@@ -14,8 +14,8 @@
 #include <math.h>
 
 // Rotation and Translation 
-Eigen::Quaterniond camera_rotation( 0.009950416684597,0.710376335014308 , -0.703749771718084 , -0.001646410091099 ); // w x y z 
-Eigen::Vector3d camera_translation(1.37996753865619, 0.219399064738647, 0.887545166846203);
+Eigen::Quaterniond camera_rotation (0.011651763924937,0.724653150487702,0.689015272988343,-0.000038399023251); // w x y z
+Eigen::Vector3d camera_translation(1.236198544416497, 0.243724848741023, 0.958845055486651);
 Eigen::Isometry3d camera_to_base(camera_rotation);
 
 
@@ -31,10 +31,10 @@ int main(int argc, char *argv[])
 
   
   /* surface normal calculation, needs to be changed to cb function */
-  double x=0.167329, y=-0.3315, z=1.105;
-  double n_x=0.0111406, n_y=-0.00943037, n_z=-0.999893;
-  n_x = -(-n_x);
-  n_y = -(-n_y);
+  double x=0.118171, y=-0.0785094, z=0.380545;
+  double n_x=-0.468805, n_y=0.132566, n_z=-0.873297;
+  n_x = -n_x;
+  n_y = -n_y;
   n_z = -n_z;
   Eigen::Matrix3d A,B,C;
   A << 1,0,0,
@@ -52,8 +52,8 @@ int main(int argc, char *argv[])
   
   camera_to_base.pretranslate(camera_translation);
   geometry_msgs::Pose camera_target;
-  camera_target.position.x = -x;
-  camera_target.position.y = -y;
+  camera_target.position.x = x;
+  camera_target.position.y = y;
   camera_target.position.z = z;
   camera_target.orientation.w =  q.coeffs().w();             
   camera_target.orientation.x =  q.coeffs().x();

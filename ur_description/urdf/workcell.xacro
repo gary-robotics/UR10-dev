@@ -13,9 +13,9 @@
   </link>
 
   <joint name="world_to_floor" type="fixed">
-    <parent link="world" />
+    <parent link="base_link" />
     <child link="floor" />
-    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+    <origin xyz="0.0 0.0 -0.5" rpy="0.0 0.0 0.0" />
   </joint>
   
  </robot>

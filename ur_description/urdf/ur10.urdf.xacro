@@ -288,7 +288,7 @@
     <joint name="${prefix}ee_fixed_joint" type="fixed">
       <parent link="${prefix}wrist_3_link" />
       <child link = "${prefix}ee_link" />
-      <origin xyz="0.0 ${wrist_3_length+0.20} 0.0" rpy="0.0 0.0 ${pi/2.0}" />
+      <origin xyz="0.0 ${wrist_3_length} 0.0" rpy="0.0 0.0 ${pi/2.0}" />
     </joint>
 
     <link name="${prefix}ee_link">
@@ -310,9 +310,15 @@
                  not corrected wrt the real robot (ie: rotated over 180
                  degrees)
       -->
+
+      <origin xyz="0 0 0" rpy="0 0 ${-pi}"/>
+      <parent link="${prefix}base"/>
+      <child link="${prefix}base_link"/>
+<!--
       <origin xyz="0 0 0" rpy="0 0 ${-pi}"/>
       <parent link="${prefix}base_link"/>
       <child link="${prefix}base"/>
+-->
     </joint>
 
     <!-- Frame coincident with all-zeros TCP on UR controller -->

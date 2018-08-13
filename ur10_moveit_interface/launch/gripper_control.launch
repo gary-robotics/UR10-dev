@@ -1,3 +1,5 @@
+<?xml version="1.0"?>
+
 <launch>
   <node name="CModelRtuNode" pkg="robotiq_c_model_control" type="CModelRtuNode.py"  args="/dev/ttyUSB0" output="screen">
   </node>
