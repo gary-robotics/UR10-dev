@@ -12,19 +12,25 @@ int main(int argc ,char** argv)
 	tf::TransformBroadcaster broadcaster1;
 	tf::TransformBroadcaster broadcaster2;
 	while(n.ok()){
-	/*
-	broadcaster1.sendTransform(
+	
+		/*
+		broadcaster1.sendTransform(
 	  tf::StampedTransform(  // x y z w 
 		tf::Transform(tf::Quaternion(0.0236331257289576,0.999567920046238,0.0172280100194881,0.00294011113491014),
 		tf::Vector3(0.730361779589858,-0.63665209974787,0.914470497824103)),                        
                 ros::Time::now(),"camera_rgb_optical_frame","base")); 
-	*/
+		*/
+	
+						
 		/*HK_kinect w x y z*/
+			
 		broadcaster2.sendTransform(
 	  tf::StampedTransform(  // x y z w 
 		tf::Transform(tf::Quaternion(-0.122919601861648,0.732033580840784,-0.659760569807942,0.117190437008716),
 		tf::Vector3(0.278292947573651,1.32699493388865,0.26265011950633)),                        
                 ros::Time::now(),"base","camera_rgb_optical_frame")); 
+		
+		
 
 		r.sleep();
 	}

@@ -29,6 +29,8 @@
 		 wrist_3_lower_limit="${-pi}" wrist_3_upper_limit="${pi}"
 />
 
+
+
   <joint name="gripper_joint" type="fixed">
     <parent link="tool0"/>
     <child link="robotiq_arg2f_base_link"/>
