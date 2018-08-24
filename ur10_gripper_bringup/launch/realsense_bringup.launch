@@ -1,9 +1,8 @@
 <?xml version="1.0"?>
 <launch>
 
-    <!-- Kinect -->
-    <include file="$(find freenect_launch)/launch/freenect.launch">
-       <arg name="depth_registration" value="true"/>
+    <!-- realsense_D435 -->
+    <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
     </include>     
     <!-- broadcast camera_to_base transfrom-->
    <node name="tf_broadcaster" pkg="frame_broadcaster" type="tf_broadcaster" /> 

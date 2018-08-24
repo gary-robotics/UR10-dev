@@ -12,6 +12,9 @@
   <!-- workcell -->
   <xacro:include filename="$(find ur_description)/urdf/workcell.xacro" />
 
+  <!-- desk -->
+  <!--<xacro:include filename="$(find ur_description)/urdf/desk.xacro" />-->
+
   <!-- iron_frame -->
   <xacro:include filename="$(find ur_description)/urdf/iron_frame.xacro" />
 
@@ -21,7 +24,7 @@
 
   <!-- arm -->
   <xacro:ur10_robot prefix="" joint_limited="true"
-		 shoulder_pan_lower_limit="${-pi/6}" shoulder_pan_upper_limit="${pi}"
+		 shoulder_pan_lower_limit="${-pi}" shoulder_pan_upper_limit="${pi}"
 		 shoulder_lift_lower_limit="${-pi}" shoulder_lift_upper_limit="${pi}"
 		 elbow_joint_lower_limit="${-pi}" elbow_joint_upper_limit="${pi}"
 		 wrist_1_lower_limit="${-pi}" wrist_1_upper_limit="${pi}"

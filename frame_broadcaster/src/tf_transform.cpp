@@ -49,8 +49,8 @@ public:
     : it_(nh_)
   {
     // Subscrive to input video feed and publish output video feed
-      image_sub_ = it_.subscribe("/camera/rgb/image_raw", 1,
-      &ImageConverter::imageCb, this);
+      image_sub_ = it_.subscribe("/camera/color/image_raw", 1,
+      &ImageConverter::imageCb, this);    //original:/camera/rgb/image_raw
     cv::namedWindow(OPENCV_WINDOW);
   }
 
@@ -106,6 +106,7 @@ public:
       out << X*1000 <<" " << Y*1000 <<" " << Z*1000 <<" ";
       Eigen::Quaterniond q;
       tf::quaternionTFToEigen(rotate,q);
+      ROS_INFO_STREAM("w x y z: " << q.coeffs().w() <<" " << q.coeffs().x() << " " << q.coeffs().y() << " " << q.coeffs().z() <<endl);
       Eigen::Matrix3d rotation_matrix;
       rotation_matrix =  q.toRotationMatrix();
       Eigen::Vector3d euler_angles = rotation_matrix.eulerAngles(0,1,2);
