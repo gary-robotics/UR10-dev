@@ -28,8 +28,16 @@ int main(int argc ,char** argv)
 	  tf::StampedTransform(  // x y z w 
 		tf::Transform(tf::Quaternion(-0.122919601861648,0.732033580840784,-0.659760569807942,0.117190437008716),
 		tf::Vector3(0.278292947573651,1.32699493388865,0.26265011950633)),                        
-                ros::Time::now(),"base","camera_rgb_optical_frame")); 
-		
+                ros::Time::now(),"base","camera_rgb_optical_frame"));
+               
+                 /*realsense w x y z*/
+/*
+		broadcaster2.sendTransform(
+	  tf::StampedTransform(  // x y z w 
+		tf::Transform(tf::Quaternion(-0.547094076764174,0.564987271404467,-0.437659153438045,0.435811793934474),
+		tf::Vector3(-0.593244106108569, -0.250359261802865, 0.678628423359555)),                        
+                ros::Time::now(),"base","camera_link"));                 
+*/		
 		
 
 		r.sleep();

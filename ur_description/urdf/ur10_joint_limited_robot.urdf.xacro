@@ -13,10 +13,10 @@
   <xacro:include filename="$(find ur_description)/urdf/workcell.xacro" />
 
   <!-- desk -->
-  <!--<xacro:include filename="$(find ur_description)/urdf/desk.xacro" />-->
+  <xacro:include filename="$(find ur_description)/urdf/desk.xacro" />
 
   <!-- iron_frame -->
-  <xacro:include filename="$(find ur_description)/urdf/iron_frame.xacro" />
+  <!--xacro:include filename="$(find ur_description)/urdf/iron_frame.xacro" /-->
 
   <!-- gripper -->
   <xacro:include filename="$(find robotiq_arg2f_model_visualization)/urdf/robotiq_arg2f_140_model.xacro" /> 
@@ -24,7 +24,7 @@
 
   <!-- arm -->
   <xacro:ur10_robot prefix="" joint_limited="true"
-		 shoulder_pan_lower_limit="${-pi}" shoulder_pan_upper_limit="${pi}"
+		 shoulder_pan_lower_limit="${-pi/3}" shoulder_pan_upper_limit="${pi}"
 		 shoulder_lift_lower_limit="${-pi}" shoulder_lift_upper_limit="${pi}"
 		 elbow_joint_lower_limit="${-pi}" elbow_joint_upper_limit="${pi}"
 		 wrist_1_lower_limit="${-pi}" wrist_1_upper_limit="${pi}"
@@ -33,6 +33,12 @@
 />
 
 
+  <link name="world" />
+  <joint name="world_joint" type="fixed">
+    <parent link="world" />
+    <child link = "base_link" />
+    <origin xyz="0.0 0.0 0.5" rpy="0.0 0.0 0.0" />
+  </joint>
 
   <joint name="gripper_joint" type="fixed">
     <parent link="tool0"/>

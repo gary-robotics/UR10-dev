@@ -3,7 +3,7 @@
     <link name="desk_link">
 
       <visual name="iron_frame_visual">
-        <pose>1.8 0 0 1.5707 0 1.5707 </pose>
+        <pose>0.8 0 0 0 0 0 </pose>
         <material name="silver">
  			<color rgba="0.6 0.6 0.6 1"/>
         </material>
@@ -14,7 +14,7 @@
 
 
       <collision name="iron_frame_collision">
-        <pose>1.8 0 0 1.5707 0 1.5707</pose>
+        <pose>0.8 0 0 0 0 0</pose>
         <geometry>
 		<mesh filename="package://ur_description/meshes/ur10/collision/desk.stl"/>
         </geometry>
@@ -34,8 +34,8 @@
     </link>
 
     <joint name="desk_to_world" type="fixed">
-    	<parent link="base"/>
+    	<parent link="world"/>
     	<child link="desk_link"/>
-    	<origin xyz="1.4 0.64 0" rpy="3.14 0 0"/>
+    	<origin xyz="-0.58 -0.6 0.7" rpy="-1.5707 0 1.5707"/>
     </joint>
   </robot>
