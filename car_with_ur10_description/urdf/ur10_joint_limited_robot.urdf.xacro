@@ -10,7 +10,7 @@
   <xacro:include filename="$(find ur_description)/urdf/ur10.urdf.xacro" />
 
   <!-- workcell -->
-  <xacro:include filename="$(find ur_description)/urdf/workcell.xacro" />
+  <!--<xacro:include filename="$(find ur_description)/urdf/workcell.xacro" />-->
 
   <!-- desk -->
   <xacro:include filename="$(find ur_description)/urdf/desk.xacro" />
@@ -32,12 +32,8 @@
 		 wrist_3_lower_limit="${-pi}" wrist_3_upper_limit="${pi}"
 />
 
+
   <link name="world" />
-  <joint name="world_joint" type="fixed">
-    <parent link="world" />
-    <child link = "base_link" />
-    <origin xyz="0.0 0.0 0.5" rpy="0.0 0.0 0.0" />
-  </joint>
 
   <joint name="gripper_joint" type="fixed">
     <parent link="tool0"/>
