@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: car_description
+    relative_path: urdf/car_with_ur10.xacro
+    xacro_args: "--inorder "
+  SRDF:
+    relative_path: config/car_with_ur10.srdf
+  CONFIG:
+    author_name: Shengfan Wang
+    author_email: shengfan1996@outlook.com
+    generated_timestamp: 1535445681
