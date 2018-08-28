@@ -5,6 +5,6 @@
     <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
     </include>     
     <!-- broadcast camera_to_base transfrom-->
-   <node name="tf_broadcaster" pkg="frame_broadcaster" type="tf_broadcaster" /> 
+    <node name="tf_broadcaster" pkg="frame_broadcaster" type="tf_broadcaster" /> 
 
 </launch>

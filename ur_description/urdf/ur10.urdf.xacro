@@ -284,11 +284,11 @@
         <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
       </xacro:cylinder_inertial>
     </link>
-    <!-- ee_link add 20cm -->
+    <!-- ee_link add 30cm -->
     <joint name="${prefix}ee_fixed_joint" type="fixed">
       <parent link="${prefix}wrist_3_link" />
       <child link = "${prefix}ee_link" />
-      <origin xyz="0.0 ${wrist_3_length + 0.3} 0.0" rpy="0.0 0.0 ${pi/2.0}" />
+      <origin xyz="0.0 ${wrist_3_length + 0.30} 0.0" rpy="0.0 0.0 ${pi/2.0}" />
     </joint>
 
     <link name="${prefix}ee_link">

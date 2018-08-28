@@ -3,7 +3,6 @@
 #include <tf/transform_listener.h>
 #include <tf/tf.h>
 
-
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/robot_model/robot_model.h>
 #include <moveit/robot_state/robot_state.h>
@@ -147,7 +146,7 @@ public:
     void clear()
     {
       ROS_INFO_STREAM("clear pose from GPD...");
-      grasp_candidates_.clear();
+      vector<moveit_msgs::Grasp>().swap(grasp_candidates_);
     } 
     
 
@@ -199,12 +198,12 @@ public:
       std::lock_guard<std::mutex> lock(m_);
       ros::Time grasp_stamp = msg->header.stamp;
       frame_id_ = msg->header.frame_id;   // camera_rgb_optical_frame
+      ROS_INFO_STREAM(frame_id_<< endl);
       grasp_candidate_.grasp_pose.header.frame_id = frame_id_; 
       grasp_candidate_.pre_grasp_approach.direction.header.frame_id = frame_id_; 
 
       for(auto grasp:msg->grasps)
       {
-        //grasp = msg->grasps[0];
         // shift the grasp according to the offset parameter
         grasp.top.x = grasp.top.x + grasp_offset_ * grasp.approach.x;
         grasp.top.y = grasp.top.y + grasp_offset_ * grasp.approach.y;
@@ -257,13 +256,12 @@ int main(int argc, char **argv)
     {
       if(mp.hold())
       {
-        ros::Duration(5).sleep();
+        ros::Duration(3).sleep();
         mp.pick();
         {
-          //if(mp.place())
-            ros::Duration(1).sleep();
-            mp.clear();
-          
+          ros::Duration(1).sleep();
+          mp.clear();
+          start = false;
         }
       }
     }
