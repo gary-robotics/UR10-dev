@@ -1,32 +1,78 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import rospy
-import copy
-import moveit_commander
-import sys
+__author__ = 'Alex Wang'
 
-    while not rospy.is_shutdown():
-        waypoints = []
-        print ('in main')
-        move_plan.gripper.set_named_target('open')
-        move_plan.gripper.go(wait = True)
-        rospy.sleep(2)
-        move_plan.call_gqcnn_srv()
-        move_plan.arm.set_pose_target(move_plan.pre_grasp_pose_base_frame)        
-        pre_grasp_plan = move_plan.arm.plan()
-        move_plan.arm.execute(pre_grasp_plan)
-        rospy.sleep(2)
-        # Cartesian Paths
-        wpose = geometry_msgs.msg.Pose()
-        wpose.orientation.w = 1.0
-        wpose.position.z -= 0.24
-        waypoints.append(copy.deepcopy(wpose))
-        grasp_plan, fraction = move_plan.arm.compute_cartesian_path(waypoints, 0.01, 0.0,avoid_collisions = True)
-        plan = moveit_
-        move_plan.arm.execute(grasp_plan)
-        rospy.sleep(2)
-        move_plan.gripper.set_named_target('close')
-        move_plan.gripper.go(wait = True)
-        rospy.sleep(2)
+import sys
+import numpy as np
+
+import rospy
+import tf
+import geometry_msgs.msg
+import message_filters
+from sensor_msgs.msg import Image, CameraInfo
+from cv_bridge import CvBridge
+
+
+
+import perception
+from gqcnn.msg import BoundingBox
+from gqcnn.srv import GQCNNGraspPlanner
+
+
+
+
+class Suction(object):
+    def __init__(self):
+        rospy.init_node("gqcnn_base_grasp",anonymous=True)
         
+        # messgae filter for image topic, need carefully set./camera/depth_registered/sw_registered/image_rect,,/camera/rgb/image_rect_color
+        rospy.loginfo ('wait_for_message')   ##############
+        rospy.wait_for_message("/camera/rgb/image_raw", Image)  ###########
+        rospy.wait_for_message("/camera/depth/image", Image)##########
+        self.image_sub = message_filters.Subscriber("/camera/rgb/image_raw", Image)
+        self.depth_sub = message_filters.Subscriber("/camera/depth/image", Image)
+        self.camera_info_topic = "/camera/rgb/camera_info"
+        self.camera_info = rospy.wait_for_message(self.camera_info_topic,CameraInfo)
+
+        #rospy.loginfo (self.camera_info.header.frame_id)   ######
+
+        self.ts = message_filters.ApproximateTimeSynchronizer([self.image_sub, self.depth_sub], 1, 1)
+        self.ts.registerCallback(self.cb)
+
+        self.color_msg = Image()
+        self.depth_msg = Image()
+        self.mask = Image()
+        
+        # bounding box for objects, this need to be specified by the detection results
+        self.bounding_box = BoundingBox()
+        self.bounding_box.maxX = 420
+        self.bounding_box.maxY = 250
+        self.bounding_box.minX = 90
+        self.bounding_box.minY = 40
+
+        # operation related to OpenCV
+        self.bridge = CvBridge()
+
+        # transform listener
+        self.listener = tf.TransformListener()
+
+    def cb(self,color_msg,depth_msg):
+        self.color_msg = color_msg
+        self.depth_msg = depth_msg
+
+
+    def call_gqcnn_srv(self):
+        rospy.sleep(1)
+        # call gqcnn service
+        rospy.loginfo('call gqcnn')
+        rospy.wait_for_service('suction_policy')
+        plan_gqcnn_grasp = rospy.ServiceProxy('suction_policy',GQCNNGraspPlanner)
+        self.response = plan_gqcnn_grasp(self.color_msg,self.depth_msg,self.camera_info,self.bounding_box,self.mask)
+        rospy.loginfo ('pose return by gqcnn')
+        rospy.loginfo (self.response.grasp.pose)
+    
+
+if __name__=='__main__':
+    suc = Suction()
+    rospy.spin() 

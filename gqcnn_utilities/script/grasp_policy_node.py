@@ -150,8 +150,8 @@ if __name__ == '__main__':
     depth_img = perception.DepthImage(depth_img)
     color_img = color_img.inpaint()
     depth_img = depth_img.inpaint()  
-    np.save("/home/ros/ur10_ws/src/gqcnn/data/rgbd/multiple_objects/depth_0.npy",depth_img.data)
-    cv2.imwrite("/home/ros/ur10_ws/src/gqcnn/data/rgbd/multiple_objects/color_0.png",color_img.data)
+    np.save("/home/ros/ur10_catkin_ws/src/gqcnn/data/rgbd/multiple_objects/depth_0.npy",depth_img.data)
+    cv2.imwrite("/home/ros/ur10_catkin_ws/src/gqcnn/data/rgbd/multiple_objects/color_0.png",color_img.data)
 
     # set up logger
     logging.getLogger().setLevel(logging.DEBUG)

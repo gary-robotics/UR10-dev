@@ -124,6 +124,7 @@ import random
 import sys
 import time
 import cv2
+import perception
 
 from autolab_core import RigidTransform, YamlConfig
 from perception import RgbdImage, RgbdSensorFactory, PointCloudBoxDetector
@@ -144,23 +145,24 @@ if __name__ == '__main__':
     depth_img = rospy.wait_for_message("/camera/depth_registered/sw_registered/image_rect",Image,timeout=3)
     cv_bridge = CvBridge()
     color_img = cv_bridge.imgmsg_to_cv2(color_img,"bgr8")
-    depth_img = cv_bridge.imgmsg_to_cv2(depth_img,"passthrough")
-    depth_img = np.array(depth_img, dtype=np.float32)
-    depth_img[np.isnan(depth_img)] = 0
-    cv2.normalize(depth_img, depth_img, 0, 1, cv2.NORM_MINMAX)
-    depth_img = np.expand_dims(depth_img,2)    
-    np.save("/home/ros/ur10_ws/src/GQ/data/rgbd/multiple_objects/depth_0.npy",depth_img)
-    cv2.imwrite("/home/ros/ur10_ws/src/GQ/data/rgbd/multiple_objects/color_0.png",color_img)  
+    color_img = perception.ColorImage(color_img)
+    depth_img = cv_bridge.imgmsg_to_cv2(depth_img,"passthrough") * 1.0
+    depth_img = perception.DepthImage(depth_img)
+    color_img = color_img.inpaint()
+    depth_img = depth_img.inpaint()  
+    np.save("/home/ros/ur10_catkin_ws/src/gqcnn/data/rgbd/multiple_objects/depth_0.npy",depth_img.data)
+    cv2.imwrite("/home/ros/ur10_catkin_ws/src/gqcnn/data/rgbd/multiple_objects/color_0.png",color_img.data)   
 
 
     # set up logger
     logging.getLogger().setLevel(logging.DEBUG)
     random.seed(100)
+
     np.random.seed(100)
 
     # parse args
     parser = argparse.ArgumentParser(description='Capture a set of test images from the Kinect2')
-    parser.add_argument('--config_filename', type=str, default='/home/ros/ur10_ws/src/GQ/cfg/examples/suction_policy.yaml', help='path to configuration file to use')
+    parser.add_argument('--config_filename', type=str, default='/home/ros/ur10_catkin_ws/src/gqcnn/cfg/examples/suction_policy.yaml', help='path to configuration file to use')
     args = parser.parse_args()
     config_filename = args.config_filename
 
